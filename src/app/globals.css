@@ -1,0 +1,269 @@
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.office-app {
+  --page: #e8e5dc;
+  --header: #f7f5ef;
+  --text: #333a34;
+  --muted: #747a70;
+  --border: rgb(77 82 72 / 12%);
+  color-scheme: light;
+  color: var(--text);
+  background: var(--page);
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.office-app[data-theme="dark"] {
+  --page: #202522;
+  --header: #292f2b;
+  --text: #e5e9e3;
+  --muted: #adb6ac;
+  --border: rgb(220 230 216 / 13%);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-width: 320px;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+.office-app {
+  display: flex;
+  width: 100%;
+  height: 100dvh;
+  flex-direction: column;
+}
+
+.office-header {
+  z-index: 1;
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 22px;
+  border-bottom: 1px solid rgb(77 82 72 / 12%);
+  background: var(--header);
+  border-color: var(--border);
+}
+
+.office-header h1 {
+  margin: 0;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: 0.1px;
+}
+
+.office-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--header), var(--text) 4%);
+}
+
+.view-toggle button {
+  min-width: 34px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.view-toggle button.selected {
+  background: var(--header);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
+}
+
+.view-toggle button:focus-visible {
+  outline: 2px solid #91aa8d;
+  outline-offset: 1px;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.theme-toggle:hover {
+  background: color-mix(in srgb, var(--header), var(--text) 6%);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid #91aa8d;
+  outline-offset: 2px;
+}
+
+.theme-toggle span:first-child {
+  font-size: 15px;
+}
+
+.game-area {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  place-items: center;
+  overflow: hidden;
+  background: var(--page);
+}
+
+.game-mount {
+  position: absolute;
+  inset: 0;
+}
+
+.game-mount canvas {
+  display: block;
+}
+
+.game-area:has(.camera-controls) .game-mount canvas {
+  cursor: grab;
+  touch-action: none;
+}
+
+.game-area:has(.camera-controls) .game-mount canvas:active {
+  cursor: grabbing;
+}
+
+.camera-controls {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1;
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--header) 94%, transparent);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 12%);
+  backdrop-filter: blur(8px);
+}
+
+.camera-controls p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.camera-button-row {
+  display: flex;
+  gap: 5px;
+}
+
+.camera-button-row button {
+  display: grid;
+  width: 34px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--header);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 17px;
+}
+
+.camera-button-row button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--header), var(--text) 8%);
+}
+
+.camera-button-row button:focus-visible {
+  outline: 2px solid #91aa8d;
+  outline-offset: 2px;
+}
+
+.camera-button-row button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.game-message {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  background: var(--page);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.game-message p {
+  margin: 4px 0;
+}
+
+@media (max-width: 520px) {
+  .office-header {
+    min-height: 52px;
+    gap: 8px;
+    padding: 0 10px;
+  }
+
+  .camera-controls {
+    right: 10px;
+    bottom: 10px;
+  }
+
+  .office-header p {
+    display: none;
+  }
+
+  .view-toggle {
+    margin-left: auto;
+  }
+
+  .theme-toggle {
+    gap: 0;
+    margin-left: 0;
+    padding: 7px 9px;
+  }
+
+  .theme-toggle span:last-child {
+    display: none;
+  }
+}
