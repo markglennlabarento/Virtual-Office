@@ -324,15 +324,17 @@ export class Office3D {
       strip.position.set(side * 10.86, 0.14, 0);
     }
 
-    const windowFrame = this.material(0xf4eee1, 0x69756b, 0.65);
-    const glass = this.material(0xa9c6c7, 0x49636a, 0.28, 0.25);
-    for (const x of [-7, -2.35, 2.35, 7]) {
-      const frame = this.box(3.2, 1.75, 0.12, windowFrame);
-      frame.position.set(x, 3.1, -6.72);
-      const pane = this.box(2.94, 1.48, 0.08, glass);
-      pane.position.set(x, 3.1, -6.63);
-      const mullion = this.box(0.07, 1.48, 0.1, windowFrame);
-      mullion.position.set(x, 3.1, -6.56);
+    if (this.room !== "server") {
+      const windowFrame = this.material(0xf4eee1, 0x69756b, 0.65);
+      const glass = this.material(0xa9c6c7, 0x49636a, 0.28, 0.25);
+      for (const x of [-7, -2.35, 2.35, 7]) {
+        const frame = this.box(3.2, 1.75, 0.12, windowFrame);
+        frame.position.set(x, 3.1, -6.72);
+        const pane = this.box(2.94, 1.48, 0.08, glass);
+        pane.position.set(x, 3.1, -6.63);
+        const mullion = this.box(0.07, 1.48, 0.1, windowFrame);
+        mullion.position.set(x, 3.1, -6.56);
+      }
     }
 
     if (this.room === "workspace") {
@@ -476,9 +478,51 @@ export class Office3D {
         this.addPlant(-8.8, -5.4);
         this.addPlant(8.8, -5.4);
         break;
+      case "server":
+        for (const z of [-3.1, 2]) {
+          for (const x of [-7.5, -2.5, 2.5, 7.5]) this.addServerRack(x, z);
+        }
+        break;
       case "workspace":
         break;
     }
+  }
+
+  private addServerRack(x: number, z: number) {
+    const cabinet = this.material(0x414b51, 0x18232c, 0.58);
+    const frame = this.material(0x849097, 0x52636c, 0.52);
+    const front = this.material(0x202a30, 0x101a21, 0.46);
+    const vent = this.material(0x64737a, 0x34434c, 0.62);
+    const body = this.box(1.7, 3.25, 1.15, cabinet);
+    body.position.set(x, 1.625, z);
+    body.castShadow = true;
+    const door = this.box(1.52, 3.02, 0.08, front);
+    door.position.set(x, 1.64, z + 0.62);
+    const sideRails = [-0.67, 0.67];
+    for (const dx of sideRails) {
+      const rail = this.box(0.07, 2.92, 0.035, frame);
+      rail.position.set(x + dx, 1.64, z + 0.68);
+    }
+    for (let unit = 0; unit < 8; unit += 1) {
+      const y = 0.36 + unit * 0.36;
+      const panel = this.box(1.18, 0.28, 0.045, vent);
+      panel.position.set(x, y, z + 0.69);
+      for (let slot = 0; slot < 4; slot += 1) {
+        const ventSlot = this.box(0.035, 0.14, 0.012, frame);
+        ventSlot.position.set(x - 0.42 + slot * 0.1, y, z + 0.72);
+      }
+      const ledMaterial = new THREE.MeshBasicMaterial({
+        color: unit % 2 === 0 ? 0x45e2b4 : 0x54bfff,
+      });
+      this.materials.add(ledMaterial);
+      const led = new THREE.Mesh(
+        this.geometry(new THREE.SphereGeometry(0.045, 8, 6)),
+        ledMaterial,
+      );
+      led.position.set(x + 0.48, y, z + 0.73);
+      this.scene.add(led);
+    }
+    this.collisions.push([x, z, 1.85, 1.35]);
   }
 
   private addRoomSign(text: string) {

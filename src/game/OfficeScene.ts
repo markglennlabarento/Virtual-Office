@@ -145,7 +145,7 @@ export class OfficeScene extends Phaser.Scene {
 
   create() {
     this.drawRoom();
-    this.createPlayer();
+    this.createPlayer(480, this.room === "server" ? 550 : 402);
 
     if (this.input.keyboard) {
       this.cursors = this.input.keyboard.createCursorKeys();
@@ -365,6 +365,12 @@ export class OfficeScene extends Phaser.Scene {
       case "cyberLounge":
         furniture = [desk(80, 260, "HOST"), sofa(180, 195), sofa(640, 195), sofa(180, 360), sofa(640, 360), table(427, 275)];
         break;
+      case "server":
+        furniture = [90, 300, 510, 720].flatMap((x) => [
+          { x, y: 125, width: 150, height: 145, kind: "rack" as const },
+          { x, y: 315, width: 150, height: 145, kind: "rack" as const },
+        ]);
+        break;
       case "workspace":
         return;
     }
@@ -438,6 +444,29 @@ export class OfficeScene extends Phaser.Scene {
   ) {
     const graphics = this.add.graphics();
     const { x, y, width, height, kind, label } = furniture;
+
+    if (kind === "rack") {
+      graphics.fillStyle(palette.shadow, 0.22);
+      graphics.fillRoundedRect(x + 5, y + 7, width, height, 7);
+      graphics.fillStyle(0x18232c);
+      graphics.fillRoundedRect(x, y, width, height, 7);
+      graphics.lineStyle(3, 0x52636c, 0.9);
+      graphics.strokeRoundedRect(x + 4, y + 4, width - 8, height - 8, 5);
+      for (let unit = 0; unit < 5; unit += 1) {
+        const unitY = y + 12 + unit * 25;
+        graphics.fillStyle(0x263844);
+        graphics.fillRoundedRect(x + 12, unitY, width - 24, 20, 3);
+        graphics.fillStyle(0x71818a);
+        for (let vent = 0; vent < 5; vent += 1) {
+          graphics.fillRect(x + 19 + vent * 8, unitY + 5, 3, 10);
+        }
+        graphics.fillStyle(unit % 2 === 0 ? 0x4fe0c0 : 0x61bfff);
+        graphics.fillCircle(x + width - 21, unitY + 10, 3);
+        graphics.fillStyle(0xf0bb62);
+        graphics.fillCircle(x + width - 32, unitY + 10, 2);
+      }
+      return;
+    }
 
     if (kind === "plant") {
       graphics.fillStyle(palette.pot);

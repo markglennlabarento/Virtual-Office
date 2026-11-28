@@ -8,7 +8,7 @@ export type Furniture = {
   y: number;
   width: number;
   height: number;
-  kind: "desk" | "sofa" | "plant" | "table";
+  kind: "desk" | "sofa" | "plant" | "table" | "rack";
   label?: string;
 };
 

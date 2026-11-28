@@ -13,6 +13,7 @@ export const OFFICE_ROOMS = [
   { id: "soc", name: "Security Operations Center" },
   { id: "ctf", name: "CTF Training Room" },
   { id: "cyberLounge", name: "Cyber Lounge" },
+  { id: "server", name: "Server Room" },
 ] as const;
 
 export type OfficeRoomId = (typeof OFFICE_ROOMS)[number]["id"];
