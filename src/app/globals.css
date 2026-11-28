@@ -79,6 +79,29 @@ body {
   font-size: 12px;
 }
 
+.room-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.room-picker select {
+  max-width: 190px;
+  padding: 6px 26px 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--header);
+  color: var(--text);
+  font: inherit;
+}
+
+.room-picker select:focus-visible {
+  outline: 2px solid #91aa8d;
+  outline-offset: 2px;
+}
+
 .view-toggle {
   display: inline-flex;
   align-items: center;
@@ -238,6 +261,19 @@ body {
 }
 
 @media (max-width: 520px) {
+  .office-header {
+    gap: 8px;
+    padding: 0 10px;
+  }
+
+  .office-header p,
+  .room-picker span {
+    display: none;
+  }
+
+  .room-picker select {
+    max-width: 130px;
+  }
   .office-header {
     min-height: 52px;
     gap: 8px;

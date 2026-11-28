@@ -2,6 +2,11 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import {
+  isOfficeRoomId,
+  OFFICE_ROOMS,
+  type OfficeRoomId,
+} from "@/domain/office/officeRooms";
 
 type Theme = "light" | "dark";
 type ViewMode = "2d" | "3d";
@@ -27,16 +32,19 @@ const Office3DCanvas = dynamic(() => import("@/components/Office3DCanvas"), {
 export default function OfficeWorkspace() {
   const [theme, setTheme] = useState<Theme>("dark");
   const [viewMode, setViewMode] = useState<ViewMode>("2d");
+  const [room, setRoom] = useState<OfficeRoomId>("workspace");
 
   useEffect(() => {
     const savedTheme = window.localStorage.getItem("office-theme");
     const savedView = window.localStorage.getItem("office-view");
+    const savedRoom = window.localStorage.getItem("office-room");
     const storedTheme =
       savedTheme === "light" || savedTheme === "dark" ? savedTheme : "dark";
     const storedView: ViewMode = savedView === "3d" ? "3d" : "2d";
     const frame = window.requestAnimationFrame(() => {
       setTheme(storedTheme);
       setViewMode(storedView);
+      if (isOfficeRoomId(savedRoom)) setRoom(savedRoom);
     });
     return () => window.cancelAnimationFrame(frame);
   }, []);
@@ -52,11 +60,31 @@ export default function OfficeWorkspace() {
     setViewMode(mode);
   }
 
+  function changeRoom(value: string) {
+    if (!isOfficeRoomId(value)) return;
+    window.localStorage.setItem("office-room", value);
+    setRoom(value);
+  }
+
   return (
     <main className="office-app" data-theme={theme}>
       <header className="office-header">
         <h1>Virtual Office</h1>
         <p>Move with the arrow keys or W A S D</p>
+        <label className="room-picker">
+          <span>Room</span>
+          <select
+            value={room}
+            onChange={(event) => changeRoom(event.target.value)}
+            aria-label="Choose office room"
+          >
+            {OFFICE_ROOMS.map((officeRoom) => (
+              <option key={officeRoom.id} value={officeRoom.id}>
+                {officeRoom.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="view-toggle" role="group" aria-label="Office view">
           <button
             type="button"
@@ -87,9 +115,9 @@ export default function OfficeWorkspace() {
         </button>
       </header>
       {viewMode === "2d" ? (
-        <OfficeCanvas theme={theme} />
+        <OfficeCanvas key={room} theme={theme} room={room} />
       ) : (
-        <Office3DCanvas theme={theme} />
+        <Office3DCanvas key={room} theme={theme} room={room} />
       )}
     </main>
   );

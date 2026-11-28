@@ -2,10 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { OfficeScene } from "@/game/OfficeScene";
+import type { OfficeRoomId } from "@/domain/office/officeRooms";
 
 type Theme = "light" | "dark";
 
-export default function OfficeCanvas({ theme }: { theme: Theme }) {
+export default function OfficeCanvas({
+  theme,
+  room,
+}: {
+  theme: Theme;
+  room: OfficeRoomId;
+}) {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<OfficeScene | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
@@ -28,14 +35,16 @@ export default function OfficeCanvas({ theme }: { theme: Theme }) {
           width: 960,
           height: 600,
           backgroundColor: "#eee9df",
-          antialias: true,
+          antialias: false,
+          pixelArt: true,
+          roundPixels: true,
           scale: {
             mode: Phaser.Scale.FIT,
             autoCenter: Phaser.Scale.CENTER_BOTH,
             width: 960,
             height: 600,
           },
-          scene: [new OfficeScene()],
+          scene: [new OfficeScene(room)],
         });
         game.events.once(Phaser.Core.Events.READY, () => {
           if (disposed || !game) return;
@@ -55,7 +64,7 @@ export default function OfficeCanvas({ theme }: { theme: Theme }) {
       game?.destroy(true);
       sceneRef.current = null;
     };
-  }, []);
+  }, [room]);
 
   useEffect(() => {
     if (status !== "ready") return;

@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { OFFICE_ROOMS, type OfficeRoomId } from "@/domain/office/officeRooms";
 
 type OfficeTheme = "light" | "dark";
 
@@ -75,22 +76,22 @@ const PALETTE = {
     window: 0xa9c6c7,
   },
   dark: {
-    background: 0x202522,
-    floor: 0x303832,
-    wall: 0x353c37,
-    accentWall: 0x414c43,
-    wood: 0x755e45,
-    woodLight: 0x987b59,
-    upholstery: 0x526557,
-    upholsteryLight: 0x6d806c,
-    green: 0x4e7357,
-    greenLight: 0x719375,
-    pot: 0x6b6051,
-    metal: 0x242c29,
-    screen: 0x577267,
-    rug: 0x3c5041,
-    table: 0x80674d,
-    tableTop: 0xa08661,
+    background: 0x172532,
+    floor: 0x243546,
+    wall: 0x263645,
+    accentWall: 0x304b58,
+    wood: 0x70472e,
+    woodLight: 0xb87943,
+    upholstery: 0x28616a,
+    upholsteryLight: 0x43888a,
+    green: 0x32734f,
+    greenLight: 0x63a96a,
+    pot: 0x845239,
+    metal: 0x243445,
+    screen: 0x42c7bb,
+    rug: 0x2b5057,
+    table: 0x995f37,
+    tableTop: 0xc9894d,
     avatar: 0x7595b4,
     skin: 0xe8b997,
     hair: 0x352f2b,
@@ -103,7 +104,7 @@ export class Office3D {
   readonly renderer: THREE.WebGLRenderer;
 
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+  private readonly camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
   private readonly keys = new Set<string>();
   private readonly themeMaterials: ThemeMaterial[] = [];
   private readonly collisions: Array<[number, number, number, number]> = [];
@@ -113,6 +114,7 @@ export class Office3D {
   private readonly typingWorkers: TypingWorker[] = [];
   private readonly resizeObserver: ResizeObserver;
   private readonly player: THREE.Group;
+  private readonly room: OfficeRoomId;
   private readonly onKeyDown = (event: KeyboardEvent) => {
     const key = event.key.toLowerCase();
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d"].includes(key)) {
@@ -125,9 +127,9 @@ export class Office3D {
   };
   private readonly onBlur = () => this.keys.clear();
   private readonly orbitTarget = new THREE.Vector3(0, 0.6, 0);
-  private orbitRadius = 23.8;
+  private orbitRadius = 27.2;
   private orbitAngle = Math.atan2(11, 16);
-  private orbitElevation = Math.atan2(12, Math.hypot(11, 16));
+  private orbitElevation = Math.atan2(15, Math.hypot(11, 16));
   private dragging = false;
   private lastPointerX = 0;
   private lastPointerY = 0;
@@ -166,8 +168,10 @@ export class Office3D {
   constructor(
     private readonly container: HTMLElement,
     theme: OfficeTheme,
+    room: OfficeRoomId = "workspace",
   ) {
     this.theme = theme;
+    this.room = room;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
@@ -225,9 +229,9 @@ export class Office3D {
   }
 
   resetCamera() {
-    this.orbitRadius = 23.8;
+    this.orbitRadius = 27.2;
     this.orbitAngle = Math.atan2(11, 16);
-    this.orbitElevation = Math.atan2(12, Math.hypot(11, 16));
+    this.orbitElevation = Math.atan2(15, Math.hypot(11, 16));
     this.updateCamera();
   }
 
@@ -270,12 +274,13 @@ export class Office3D {
   private addLighting() {
     this.scene.background = new THREE.Color(PALETTE[this.theme].background);
     this.scene.fog = new THREE.Fog(PALETTE[this.theme].background, 24, 46);
-    this.scene.add(new THREE.HemisphereLight(0xfff8e9, 0x73796c, 2.1));
+    this.scene.add(new THREE.HemisphereLight(0xfff8e9, 0x73796c, 1.8));
 
-    const keyLight = new THREE.DirectionalLight(0xffedcf, 3.1);
+    const keyLight = new THREE.DirectionalLight(0xffedcf, 2.6);
     keyLight.position.set(-5, 12, 7);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.set(2048, 2048);
+    keyLight.shadow.radius = 3;
     keyLight.shadow.camera.left = -14;
     keyLight.shadow.camera.right = 14;
     keyLight.shadow.camera.top = 12;
@@ -304,7 +309,7 @@ export class Office3D {
     if (Array.isArray(grid.material)) {
       for (const material of grid.material) {
         material.transparent = true;
-        material.opacity = this.theme === "light" ? 0.17 : 0.12;
+        material.opacity = this.theme === "light" ? 0.12 : 0.08;
       }
     }
     this.scene.add(grid);
@@ -313,7 +318,6 @@ export class Office3D {
     this.addWall(-11, 2.35, 0, 0.24, 4.7, 14, wall);
     this.addWall(11, 2.35, 0, 0.24, 4.7, 14, wall);
     this.addWall(0, 2.35, -6.86, 21.6, 4.55, 0.08, accentWall);
-
     const baseboard = this.material(0xc5c5b7, 0x4a554b, 0.85);
     for (const side of [-1, 1]) {
       const strip = this.box(0.08, 0.28, 13.7, baseboard);
@@ -331,29 +335,174 @@ export class Office3D {
       mullion.position.set(x, 3.1, -6.56);
     }
 
-    const rugMesh = this.box(7.7, 0.035, 5.2, rug);
-    rugMesh.position.set(0, 0.02, 0);
-    rugMesh.receiveShadow = true;
-    this.addTable(0, 0, 1.5, 1.15);
-    this.addEarthGlobe();
-    this.addGameStation();
-    this.addPlant(-9.45, -5.45);
-    this.addPlant(9.45, -5.45);
-    this.addPlant(-9.45, 5.45);
-    this.addPlant(9.45, 5.45);
-    this.addDesk(-5.4, -3.4, "DESIGN");
-    this.addDesk(5.4, -3.4, "STUDIO");
-    this.addDesk(-5.4, 3.4, "BUILD");
-    this.addDesk(5.4, 3.4, "FOCUS");
-    this.addDesk(-9, 0, "SECRETARY", "human");
-    this.addDesk(9, 0, "YOU", "none");
-    this.addSofa(0, -5.3);
-    this.addSofa(0, 5.3);
+    if (this.room === "workspace") {
+      const rugMesh = this.box(7.7, 0.035, 5.2, rug);
+      rugMesh.position.set(0, 0.02, 0);
+      rugMesh.receiveShadow = true;
+      this.addTable(0, 0, 1.5, 1.15);
+      this.addEarthGlobe();
+      this.addGameStation();
+      this.addPlant(-9.45, -5.45);
+      this.addPlant(9.45, -5.45);
+      this.addPlant(-9.45, 5.45);
+      this.addPlant(9.45, 5.45);
+      this.addDesk(-5.4, -3.4, "DESIGN");
+      this.addDesk(5.4, -3.4, "STUDIO");
+      this.addDesk(-5.4, 3.4, "BUILD");
+      this.addDesk(5.4, 3.4, "FOCUS");
+      this.addDesk(-9, 0, "SECRETARY", "human");
+      this.addDesk(9, 0, "YOU", "none");
+      this.addSofa(0, -5.3);
+      this.addSofa(0, 5.3);
+    } else {
+      this.buildAlternativeRoom();
+    }
     const ceilingLamp = this.material(0xf4dca8, 0x89774e, 0.4, 0.85);
     const lamp = new THREE.Mesh(this.geometry(new THREE.SphereGeometry(0.18, 16, 12)), ceilingLamp);
     lamp.position.set(0, 4.3, 0);
     this.scene.add(lamp);
 
+  }
+
+  private buildAlternativeRoom() {
+    const name = OFFICE_ROOMS.find(({ id }) => id === this.room)?.name ?? "";
+    this.addRoomSign(name);
+    switch (this.room) {
+      case "lobby":
+        this.addDesk(0, -3.8, "RECEPTION");
+        this.addSofa(-3.8, 0.5);
+        this.addSofa(3.8, 0.5);
+        this.addTable(0, 2.6, 1.8, 1.4);
+        this.addPlant(-8.8, -5.4);
+        this.addPlant(8.8, -5.4);
+        break;
+      case "meeting":
+        this.addTable(0, -0.2, 4.2, 2.6);
+        this.addDesk(-8, 0, "MEETING");
+        this.addDesk(8, 0, "MEETING");
+        for (const x of [-4.6, -2.3, 0, 2.3, 4.6]) {
+          this.addSeat(x, -2.4);
+          this.addSeat(x, 2.1);
+        }
+        break;
+      case "private":
+        this.addDesk(0, -2.5, "PRIVATE OFFICE");
+        this.addSofa(0, 3.4);
+        this.addPlant(-8.8, -5.4);
+        break;
+      case "focus":
+        this.addDesk(-4, -2.8, "FOCUS 1");
+        this.addDesk(4, -2.8, "FOCUS 2");
+        this.addDesk(0, 2.8, "QUIET");
+        break;
+      case "breakout":
+        this.addTable(0, 0, 2.8, 2);
+        this.addDesk(-8, 0, "HOST");
+        this.addSofa(-4.2, -3.4);
+        this.addSofa(4.2, -3.4);
+        this.addSofa(-4.2, 3.4);
+        this.addSofa(4.2, 3.4);
+        break;
+      case "phone": {
+        const glass = this.material(0xa9c6c7, 0x49636a, 0.28, 0.25);
+        this.addWall(-2, 1.45, 0, 0.12, 2.9, 4.8, glass);
+        this.addWall(2, 1.45, 0, 0.12, 2.9, 4.8, glass);
+        this.addWall(0, 1.45, -2.4, 4, 2.9, 0.12, glass);
+        this.addDesk(0, -0.2, "CALL");
+        this.addSeat(0, 1.6);
+        break;
+      }
+      case "cafe":
+        this.addDesk(0, -5.2, "CAFE");
+        this.addSofa(-5.2, -3.7);
+        this.addSofa(5.2, -3.7);
+        this.addSofa(0, 3.8);
+        this.addTable(-4.4, 0, 1.8, 1.5);
+        this.addTable(0, -0.2, 1.8, 1.5);
+        this.addTable(4.4, 0, 1.8, 1.5);
+        this.addPlant(-9, -5.4);
+        this.addPlant(9, -5.4);
+        break;
+      case "game":
+        this.addDesk(-7, 0, "HOST");
+        this.addSofa(-4, 3.6);
+        this.addSofa(4, 3.6);
+        this.addTable(0, 1.3, 2.4, 1.8);
+        this.addGameStation();
+        break;
+      case "auditorium": {
+        this.addDesk(-8.5, -4.5, "HOST");
+        const stage = this.material(0xb79770, 0xa08661, 0.85);
+        const platform = this.box(8, 0.35, 2, stage);
+        platform.position.set(0, 0.18, -4.7);
+        const display = this.material(0x48534f, 0x242c29, 0.5);
+        const screen = this.box(6.5, 2.7, 0.18, display);
+        screen.position.set(0, 2.6, -6.55);
+        for (const z of [-1.5, 0.3, 2.1, 3.9]) {
+          for (const x of [-6.5, -4.3, -2.1, 0.1, 2.3, 4.5, 6.7]) {
+            this.addSeat(x, z);
+          }
+        }
+        break;
+      }
+      case "training":
+        this.addGameStation();
+        for (const z of [-1.5, 1.8, 4.8]) {
+          for (const x of [-4.5, 0, 4.5]) this.addDesk(x, z, "CLASS");
+        }
+        break;
+      case "soc":
+        this.addDashboard(-4.1, 1.8, -6.58, "LIVE OPERATIONS");
+        this.addDashboard(0, 1.8, -6.58, "ALERT QUEUE");
+        this.addDashboard(4.1, 1.8, -6.58, "NETWORK STATUS");
+        this.addDesk(-5, 1.5, "MONITOR");
+        this.addDesk(0, 1.5, "INCIDENT");
+        this.addDesk(5, 1.5, "ANALYSIS");
+        break;
+      case "ctf":
+        this.addDashboard(0, 1.8, -6.58, "CAPTURE THE FLAG");
+        this.addDesk(-5, -1.5, "TEAM 1");
+        this.addDesk(5, -1.5, "TEAM 2");
+        this.addDesk(-5, 3.2, "TEAM 3");
+        this.addDesk(5, 3.2, "TEAM 4");
+        break;
+      case "cyberLounge":
+        this.addDashboard(0, 1.8, -6.58, "CYBER LOUNGE");
+        this.addDesk(-7, 1.5, "HOST");
+        this.addSofa(-4.2, -0.8);
+        this.addSofa(4.2, -0.8);
+        this.addSofa(0, 3.7);
+        this.addTable(0, 1.5, 2.1, 1.6);
+        this.addPlant(-8.8, -5.4);
+        this.addPlant(8.8, -5.4);
+        break;
+      case "workspace":
+        break;
+    }
+  }
+
+  private addRoomSign(text: string) {
+    const material = new THREE.MeshBasicMaterial({
+      map: this.createTextTexture(text.toUpperCase()),
+    });
+    this.materials.add(material);
+    const sign = new THREE.Mesh(
+      this.geometry(new THREE.PlaneGeometry(5.8, 0.7)),
+      material,
+    );
+    sign.position.set(0, 4.25, -6.55);
+    this.scene.add(sign);
+  }
+
+  private addDashboard(x: number, y: number, z: number, title: string) {
+    const bezelMaterial = this.material(0x48534f, 0x242c29, 0.48);
+    const screenMaterial = new THREE.MeshBasicMaterial({ color: 0x42c7bb });
+    this.materials.add(screenMaterial);
+    const bezel = this.box(3.4, 1.7, 0.16, bezelMaterial);
+    bezel.position.set(x, y, z);
+    const screen = this.box(3.16, 1.46, 0.025, screenMaterial);
+    screen.position.set(x, y, z + 0.095);
+    this.addLabel(title, x, z + 0.45);
   }
 
   private addGameStation() {
@@ -488,7 +637,14 @@ export class Office3D {
 
     this.addSeat(x, z + 1.12);
     if (employee !== "none") {
-      this.addAIWorker(x, z + 1.12, keyMaterial, screen, employee === "human");
+      this.addAIWorker(
+        x,
+        z + 1.12,
+        keyMaterial,
+        screen,
+        employee === "human",
+        this.room !== "workspace",
+      );
     }
     this.addLabel(label, x, z + 0.69);
     this.collisions.push([x, z, 1.72, 0.87]);
@@ -514,6 +670,7 @@ export class Office3D {
     keyMaterial: THREE.MeshStandardMaterial,
     monitorScreen: THREE.Mesh,
     isHuman = false,
+    stationary = false,
   ) {
     const robot = new THREE.Group();
     robot.position.set(x, 0, z);
@@ -887,7 +1044,9 @@ export class Office3D {
       gameRoute: this.createGameRoute(home, gameSpot),
       route: [],
       state: "working",
-      nextActionAt: performance.now() + 24000 + workerIndex * 2500,
+      nextActionAt: stationary
+        ? Number.POSITIVE_INFINITY
+        : performance.now() + 24000 + workerIndex * 2500,
       phase: workerIndex * 1.3,
       dialogue,
       dialogueContext,
@@ -954,10 +1113,10 @@ export class Office3D {
       context.roundRect(4, 4, 248, 56, 16);
       context.fill();
       context.fillStyle = this.theme === "light" ? "#52675a" : "#9de8d4";
-      context.font = "bold 25px Segoe UI, sans-serif";
+      context.font = "bold 18px Segoe UI, sans-serif";
       context.textAlign = "center";
       context.textBaseline = "middle";
-      context.fillText(text, 128, 33);
+      context.fillText(text, 128, 33, 216);
     }
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;

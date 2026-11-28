@@ -1,10 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { OfficeRoomId } from "@/domain/office/officeRooms";
 
 type Theme = "light" | "dark";
 
-export default function Office3DCanvas({ theme }: { theme: Theme }) {
+export default function Office3DCanvas({
+  theme,
+  room,
+}: {
+  theme: Theme;
+  room: OfficeRoomId;
+}) {
   const mountRef = useRef<HTMLDivElement>(null);
   const officeRef = useRef<import("@/game/Office3D").Office3D | null>(null);
   const themeRef = useRef(theme);
@@ -23,7 +30,7 @@ export default function Office3DCanvas({ theme }: { theme: Theme }) {
         const { Office3D } = await import("@/game/Office3D");
         if (disposed || !mountRef.current) return;
 
-        office = new Office3D(mountRef.current, themeRef.current);
+        office = new Office3D(mountRef.current, themeRef.current, room);
         office.renderer.domElement.setAttribute(
           "aria-label",
           "Three-dimensional virtual office. Move with the arrow keys or W A S D.",
@@ -43,7 +50,7 @@ export default function Office3DCanvas({ theme }: { theme: Theme }) {
       office?.destroy();
       officeRef.current = null;
     };
-  }, []);
+  }, [room]);
 
   useEffect(() => {
     officeRef.current?.setTheme(theme);

@@ -1,9 +1,11 @@
 import Phaser from "phaser";
 import {
+  type Furniture,
   FURNITURE,
   OFFICE_SIZE,
   overlapsFurniture,
 } from "@/domain/office/officeMap";
+import { OFFICE_ROOMS, type OfficeRoomId } from "@/domain/office/officeRooms";
 
 const PLAYER_RADIUS = 14;
 const PLAYER_SPEED = 210;
@@ -60,26 +62,26 @@ const PALETTES = {
     name: "#52675a",
   },
   dark: {
-    floor: 0x29302c,
-    grid: 0x36403a,
-    rug: 0x35463b,
-    rugCenter: 0x405447,
-    shadow: 0x101411,
-    pot: 0x756957,
-    leafDark: 0x4e7357,
-    leaf: 0x67906b,
-    leafLight: 0x7ca27b,
-    desk: 0x806b53,
-    deskTop: 0x9c8060,
-    device: 0x303a36,
-    screen: 0x45a9a9,
-    keyboard: 0x48534c,
-    label: "#e0c49f",
-    sofa: 0x56675b,
-    sofaSeat: 0x708171,
-    sofaCenter: 0x485b4d,
-    table: 0x80674d,
-    tableTop: 0xa08661,
+    floor: 0x1b2b3c,
+    grid: 0x2b4052,
+    rug: 0x24414a,
+    rugCenter: 0x2a5457,
+    shadow: 0x111923,
+    pot: 0x945d3d,
+    leafDark: 0x32734f,
+    leaf: 0x4d9860,
+    leafLight: 0x78b76c,
+    desk: 0x8c5838,
+    deskTop: 0xc47e49,
+    device: 0x243445,
+    screen: 0x42c7bb,
+    keyboard: 0x405466,
+    label: "#ffd18b",
+    sofa: 0x28616a,
+    sofaSeat: 0x38858a,
+    sofaCenter: 0x24525c,
+    table: 0x995f37,
+    tableTop: 0xc9894d,
     avatarShadow: 0x141b17,
     avatar: 0x7595b4,
     skin: 0xe8b997,
@@ -117,10 +119,13 @@ export class OfficeScene extends Phaser.Scene {
   private readonly aiWorkers: AIWorker[] = [];
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private movementKeys?: Record<"w" | "a" | "s" | "d", Phaser.Input.Keyboard.Key>;
+  private roomFurniture: Furniture[] = [];
   private theme: OfficeTheme = "light";
+  private readonly room: OfficeRoomId;
 
-  constructor() {
+  constructor(room: OfficeRoomId = "workspace") {
     super("office");
+    this.room = room;
   }
 
   setTheme(theme: OfficeTheme) {
@@ -253,7 +258,15 @@ export class OfficeScene extends Phaser.Scene {
       x + PLAYER_RADIUS <= OFFICE_SIZE.width - 46 &&
       y - PLAYER_RADIUS >= 48 &&
       y + PLAYER_RADIUS <= OFFICE_SIZE.height - 42 &&
-      !overlapsFurniture(x, y, PLAYER_RADIUS)
+      !(this.room === "workspace"
+        ? overlapsFurniture(x, y, PLAYER_RADIUS)
+        : this.roomFurniture.some(
+            ({ x: left, y: top, width, height }) =>
+              x + PLAYER_RADIUS > left &&
+              x - PLAYER_RADIUS < left + width &&
+              y + PLAYER_RADIUS > top &&
+              y - PLAYER_RADIUS < top + height,
+          ))
     );
   }
 
@@ -266,19 +279,126 @@ export class OfficeScene extends Phaser.Scene {
     graphics.fillStyle(palette.grid, 0.6);
     for (let x = 56; x < OFFICE_SIZE.width - 40; x += 48) {
       for (let y = 56; y < OFFICE_SIZE.height - 40; y += 48) {
-        graphics.fillCircle(x, y, 1.5);
+        graphics.fillRect(x - 2, y - 2, 4, 4);
       }
     }
 
-    graphics.fillStyle(palette.rug);
-    graphics.fillRoundedRect(392, 242, 176, 116, 22);
-    graphics.fillStyle(palette.rugCenter);
-    graphics.fillRoundedRect(399, 249, 162, 102, 18);
-
-    for (const furniture of FURNITURE) {
-      this.drawFurniture(furniture, palette);
+    if (this.room === "workspace") {
+      graphics.fillStyle(palette.rug);
+      graphics.fillRoundedRect(392, 242, 176, 116, 22);
+      graphics.fillStyle(palette.rugCenter);
+      graphics.fillRoundedRect(399, 249, 162, 102, 18);
+      for (const furniture of FURNITURE) {
+        this.drawFurniture(furniture, palette);
+      }
+      this.drawGameStation(palette);
+      return;
     }
-    this.drawGameStation(palette);
+
+    graphics.lineStyle(5, palette.rug, 0.9);
+    graphics.strokeRect(28, 28, OFFICE_SIZE.width - 56, OFFICE_SIZE.height - 56);
+    graphics.fillStyle(palette.rug, 0.82);
+    graphics.fillRoundedRect(305, 36, 350, 54, 8);
+    this.add.text(480, 62, OFFICE_ROOMS.find(({ id }) => id === this.room)?.name ?? "", {
+      color: palette.label,
+      fontFamily: "Arial, sans-serif",
+      fontSize: "20px",
+      fontStyle: "bold",
+      letterSpacing: 1.5,
+    }).setOrigin(0.5);
+    this.drawAlternativeRoom(palette);
+  }
+
+  private drawAlternativeRoom(palette: (typeof PALETTES)[OfficeTheme]) {
+    const desk = (x: number, y: number, label?: string): Furniture => ({
+      x, y, width: 152, height: 74, kind: "desk", label,
+    });
+    const sofa = (x: number, y: number): Furniture => ({
+      x, y, width: 140, height: 64, kind: "sofa",
+    });
+    const table = (x: number, y: number): Furniture => ({
+      x, y, width: 106, height: 76, kind: "table",
+    });
+    const plant = (x: number, y: number): Furniture => ({
+      x, y, width: 54, height: 54, kind: "plant",
+    });
+    let furniture: Furniture[] = [];
+
+    switch (this.room) {
+      case "lobby":
+        furniture = [desk(404, 142, "RECEPTION"), sofa(210, 230), sofa(610, 230), table(427, 322), plant(100, 440), plant(806, 440)];
+        break;
+      case "meeting":
+        furniture = [table(427, 244), desk(208, 178), desk(600, 178), desk(208, 344), desk(600, 344)];
+        break;
+      case "private":
+        furniture = [desk(404, 188, "PRIVATE"), sofa(220, 350), plant(790, 155)];
+        break;
+      case "focus":
+        furniture = [desk(404, 165, "QUIET"), desk(220, 340), desk(600, 340)];
+        break;
+      case "breakout":
+        furniture = [desk(404, 110, "HOST"), sofa(190, 188), sofa(630, 188), sofa(190, 340), sofa(630, 340), table(427, 270)];
+        break;
+      case "phone":
+        furniture = [desk(404, 208, "CALL")];
+        break;
+      case "cafe":
+        furniture = [desk(404, 110, "CAFE"), sofa(130, 180), sofa(690, 180), table(270, 320), table(580, 320), plant(70, 430), plant(836, 430)];
+        break;
+      case "game":
+        furniture = [desk(404, 110, "HOST"), sofa(180, 335), sofa(640, 335), table(427, 260)];
+        break;
+      case "auditorium": {
+        furniture = [desk(80, 145, "HOST")];
+        break;
+      }
+      case "training":
+        furniture = [desk(180, 168), desk(404, 168), desk(628, 168), desk(180, 315), desk(404, 315), desk(628, 315)];
+        break;
+      case "soc":
+        furniture = [desk(170, 190, "MONITOR"), desk(404, 190, "INCIDENT"), desk(638, 190, "ANALYSIS"), desk(404, 355, "OPS")];
+        break;
+      case "ctf":
+        furniture = [desk(190, 190, "TEAM 1"), desk(630, 190, "TEAM 2"), desk(190, 350, "TEAM 3"), desk(630, 350, "TEAM 4")];
+        break;
+      case "cyberLounge":
+        furniture = [desk(80, 260, "HOST"), sofa(180, 195), sofa(640, 195), sofa(180, 360), sofa(640, 360), table(427, 275)];
+        break;
+      case "workspace":
+        return;
+    }
+
+    this.roomFurniture = furniture;
+    for (const item of furniture) {
+      this.drawFurniture(item, palette, item.kind === "desk");
+    }
+    if (this.room === "game" || this.room === "training" || this.room === "soc" || this.room === "ctf") {
+      this.drawGameStation(palette);
+    }
+    if (this.room === "auditorium") {
+      const stage = this.add.graphics();
+      stage.fillStyle(palette.desk);
+      stage.fillRoundedRect(350, 108, 260, 34, 8);
+      stage.fillStyle(palette.screen);
+      stage.fillRoundedRect(385, 112, 190, 8, 3);
+      stage.fillStyle(palette.sofa);
+      for (let row = 0; row < 4; row += 1) {
+        for (let column = 0; column < 7; column += 1) {
+          const x = 170 + column * 104;
+          const y = 206 + row * 64;
+          stage.fillRoundedRect(x, y, 42, 22, 5);
+          stage.fillRoundedRect(x + 4, y + 20, 34, 10, 3);
+        }
+      }
+    }
+    if (this.room === "phone") {
+      const booth = this.add.graphics();
+      booth.lineStyle(8, palette.sofa);
+      booth.strokeRect(340, 145, 280, 300);
+      booth.fillStyle(palette.screen, 0.35);
+      booth.fillRect(348, 153, 12, 284);
+    }
   }
 
   private drawGameStation(palette: (typeof PALETTES)[OfficeTheme]) {
@@ -311,7 +431,11 @@ export class OfficeScene extends Phaser.Scene {
     }).setOrigin(0.5);
   }
 
-  private drawFurniture(furniture: (typeof FURNITURE)[number], palette: (typeof PALETTES)[OfficeTheme]) {
+  private drawFurniture(
+    furniture: Furniture,
+    palette: (typeof PALETTES)[OfficeTheme],
+    createWorkers = true,
+  ) {
     const graphics = this.add.graphics();
     const { x, y, width, height, kind, label } = furniture;
 
@@ -355,8 +479,14 @@ export class OfficeScene extends Phaser.Scene {
             letterSpacing: 1.5,
           })
           .setOrigin(0.5, 1);
-        if (label !== "YOU") {
-          this.createAIWorker(x + width / 2, y + height + 20, label, monitorScreen);
+        if (createWorkers && label !== "YOU") {
+          this.createAIWorker(
+            x + width / 2,
+            y + height + 20,
+            label,
+            monitorScreen,
+            this.room !== "workspace",
+          );
         }
       }
       return;
@@ -380,20 +510,22 @@ export class OfficeScene extends Phaser.Scene {
     graphics.fillEllipse(x + width / 2, y + height / 2, width, height);
     graphics.fillStyle(palette.tableTop);
     graphics.fillEllipse(x + width / 2, y + height / 2 - 3, width - 10, height - 10);
-    const globeX = x + width / 2;
-    const globeY = y + height / 2 - 3;
-    graphics.fillStyle(0x54d8ff, 0.12);
-    graphics.fillCircle(globeX, globeY, 26);
-    graphics.fillStyle(0x54d8ff, 0.2);
-    graphics.fillCircle(globeX, globeY, 22);
-    graphics.fillStyle(0x2679a6);
-    graphics.fillCircle(globeX, globeY, 18);
-    graphics.fillStyle(0x74a96b);
-    graphics.fillEllipse(globeX - 6, globeY - 5, 13, 9);
-    graphics.fillEllipse(globeX + 6, globeY + 5, 9, 13);
-    graphics.lineStyle(1, 0xd7e9e3, 0.72);
-    graphics.strokeCircle(globeX, globeY, 18);
-    graphics.strokeEllipse(globeX, globeY, 11, 34);
+    if (createWorkers) {
+      const globeX = x + width / 2;
+      const globeY = y + height / 2 - 3;
+      graphics.fillStyle(0x54d8ff, 0.12);
+      graphics.fillCircle(globeX, globeY, 26);
+      graphics.fillStyle(0x54d8ff, 0.2);
+      graphics.fillCircle(globeX, globeY, 22);
+      graphics.fillStyle(0x2679a6);
+      graphics.fillCircle(globeX, globeY, 18);
+      graphics.fillStyle(0x74a96b);
+      graphics.fillEllipse(globeX - 6, globeY - 5, 13, 9);
+      graphics.fillEllipse(globeX + 6, globeY + 5, 9, 13);
+      graphics.lineStyle(1, 0xd7e9e3, 0.72);
+      graphics.strokeCircle(globeX, globeY, 18);
+      graphics.strokeEllipse(globeX, globeY, 11, 34);
+    }
   }
 
   private createAIWorker(
@@ -401,6 +533,7 @@ export class OfficeScene extends Phaser.Scene {
     y: number,
     name: string,
     monitorScreen: Phaser.GameObjects.Graphics,
+    stationary = false,
   ) {
     const isHuman = name === "SECRETARY";
     const shadow = this.add.ellipse(0, 15, 30, 9, 0x263c3a, 0.16);
@@ -531,7 +664,7 @@ export class OfficeScene extends Phaser.Scene {
       gameRoute,
       route: [],
       state: "working",
-      nextActionAt: 24000 + index * 2500,
+      nextActionAt: stationary ? Number.POSITIVE_INFINITY : 24000 + index * 2500,
       phase: index * 1.7,
       dialogue,
       dialogueIndex: index % ROBOT_DIALOGUE.length,
